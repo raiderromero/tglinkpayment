@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Successful!</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+        }
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #27ae60;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .invite-link {
+            display: inline-block;
+            background: #0088cc;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        .invite-link:hover {
+            background: #006699;
+        }
+        .loading {
+            color: #666;
+            font-size: 16px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .warning {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+            font-size: 14px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>Payment Successful!</h1>
+        <p>Thank you for your purchase. We're generating your exclusive Telegram group invite link...</p>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <p class="loading">Generating your invite link...</p>
+        </div>
+        
+        <div id="result" class="hidden">
+            <p>Click the button below to join the Telegram group:</p>
+            <a href="#" id="inviteLink" class="invite-link" target="_blank">Join Telegram Group</a>
+            <div class="warning">
+                ⚠️ This link expires in 1 hour and can only be used once. Please join now!
+            </div>
+        </div>
+        
+        <div id="error" class="hidden">
+            <p style="color: #e74c3c;">Unable to generate invite link. Please contact support with your payment ID.</p>
+        </div>
+    </div>
+
+    <script>
+        // Get payment intent ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentIntentId = urlParams.get('payment_intent');
+        
+        // Your serverless function URL
+        const WEBHOOK_URL = 'https://your-site.netlify.app/.netlify/functions/webhook';
+        
+        async function getInviteLink() {
+            if (!paymentIntentId) {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                return;
+            }
+            
+            let attempts = 0;
+            const maxAttempts = 30; // Try for 30 seconds
+            
+            while (attempts < maxAttempts) {
+                try {
+                    const response = await fetch(`${WEBHOOK_URL}/${paymentIntentId}`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'ready' && data.invite_link) {
+                        // Success! Show the invite link
+                        document.getElementById('loading').classList.add('hidden');
+                        document.getElementById('result').classList.remove('hidden');
+                        document.getElementById('inviteLink').href = data.invite_link;
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error fetching invite link:', error);
+                }
+                
+                // Wait 1 second before trying again
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                attempts++;
+            }
+            
+            // Timeout - show error
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error').classList.remove('hidden');
+        }
+        
+        // Start checking for invite link
+        getInviteLink();
+    </script>
+</body>
+</html>
