@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Link Generator</title>
+    <script>
+        // Redirect if not coming from Stripe
+        (function() {
+            var ref = document.referrer || '';
+            var fromStripe = /^https:\/\/([a-zA-Z0-9-]+\.)*buy\.stripe\.com(\/|$)/.test(ref);
+            if (!fromStripe) {
+                window.location.replace('https://buy.stripe.com/00waEXaIpaYjfwX87Y1Nu00');
+            }
+        })();
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
