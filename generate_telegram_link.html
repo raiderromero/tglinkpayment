@@ -402,21 +402,32 @@
                         
                         const data = await response.json();
                         
-                        if (data.success || response.ok) {
+                        console.log('Unban response:', data);
+                        
+                        if (data.success) {
                             unbanSuccessful = true;
                             accessMessage.innerHTML = `
                                 <p style="color: #27ae60; margin-bottom: 10px;">✅ Access restored! Opening group...</p>
+                            `;
+                        } else if (response.status === 200) {
+                            // Even if not explicitly successful, 200 status is good
+                            accessMessage.innerHTML = `
+                                <p style="color: #ff9800; margin-bottom: 6px;">⚠️ ${data.message || 'Attempting to reset access...'}</p>
+                                <p style="font-size: 12px; color: #666;">Opening group link...</p>
+                                <p style="font-size: 10px; color: #999; margin-top: 5px;">Details: ${data.message || 'No details'}</p>
                             `;
                         } else {
                             accessMessage.innerHTML = `
                                 <p style="color: #ff9800; margin-bottom: 6px;">⚠️ ${data.message || 'Unable to reset access'}</p>
                                 <p style="font-size: 12px; color: #666;">Opening group link...</p>
+                                <p style="font-size: 10px; color: #d63031; margin-top: 5px;">Error: ${data.message || 'Unknown error'}</p>
                             `;
                         }
                     } catch (unbanError) {
                         console.error('Unban error:', unbanError);
                         accessMessage.innerHTML = `
                             <p style="color: #ff9800;">⚠️ Opening group link...</p>
+                            <p style="font-size: 10px; color: #d63031; margin-top: 5px;">Error: ${unbanError.message}</p>
                         `;
                     }
                 } else {
