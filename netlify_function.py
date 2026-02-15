@@ -52,6 +52,18 @@ async def create_telegram_invite_link():
     )
     return invite_link.invite_link
 
+async def unban_user(user_id):
+    """Unban a user from the Telegram group"""
+    try:
+        result = await bot.unban_chat_member(
+            chat_id=TELEGRAM_GROUP_ID,
+            user_id=user_id,
+            only_if_banned=False
+        )
+        return {'success': True, 'message': 'User unbanned successfully'}
+    except Exception as e:
+        return {'success': False, 'message': str(e)}
+
 def handler(event, context):
     """Serverless function handler"""
     
@@ -66,6 +78,47 @@ def handler(event, context):
             },
             'body': ''
         }
+    
+    # Handle unban request
+    if event.get('httpMethod') == 'POST':
+        try:
+            body = json.loads(event.get('body', '{}'))
+            
+            # Check if this is an unban request
+            if body.get('action') == 'unban' or 'unban' in event.get('path', ''):
+                user_id = body.get('user_id')
+                
+                if not user_id:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Access-Control-Allow-Origin': '*',
+                            'Content-Type': 'application/json',
+                        },
+                        'body': json.dumps({'success': False, 'message': 'user_id is required'})
+                    }
+                
+                result = run_async(unban_user(int(user_id)))
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Access-Control-Allow-Origin': '*',
+                        'Content-Type': 'application/json',
+                    },
+                    'body': json.dumps(result)
+                }
+        except json.JSONDecodeError:
+            pass
+        except Exception as e:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': 'application/json',
+                },
+                'body': json.dumps({'success': False, 'message': str(e)})
+            }
     
     # Handle GET request for invite link retrieval
     if event.get('httpMethod') == 'GET':
@@ -94,40 +147,51 @@ def handler(event, context):
                 'body': json.dumps({'status': 'processing'})
             }
     
-    # Handle Stripe webhook
-    try:
-        payload = event.get('body', '')
-        sig_header = event.get('headers', {}).get('stripe-signature', '')
-        
-        # Verify webhook signature
-        webhook_event = stripe.Webhook.construct_event(
-            payload, sig_header, STRIPE_WEBHOOK_SECRET
-        )
-        
-        # Handle checkout.session.completed event
-        if webhook_event['type'] == 'checkout.session.completed':
-            session = webhook_event['data']['object']
-            payment_id = session['payment_intent']
+    # Handle Stripe webhook (only if it has Stripe signature)
+    stripe_signature = event.get('headers', {}).get('stripe-signature', '')
+    if stripe_signature and event.get('httpMethod') == 'POST':
+        try:
+            payload = event.get('body', '')
             
-            # Generate Telegram invite link
-            invite_link = run_async(create_telegram_invite_link())
+            # Verify webhook signature
+            webhook_event = stripe.Webhook.construct_event(
+                payload, stripe_signature, STRIPE_WEBHOOK_SECRET
+            )
             
-            # Store it
-            invite_links[payment_id] = invite_link
+            # Handle checkout.session.completed event
+            if webhook_event['type'] == 'checkout.session.completed':
+                session = webhook_event['data']['object']
+                payment_id = session['payment_intent']
+                
+                # Generate Telegram invite link
+                invite_link = run_async(create_telegram_invite_link())
+                
+                # Store it
+                invite_links[payment_id] = invite_link
+                
+                print(f"Generated invite link for payment {payment_id}")
             
-            print(f"Generated invite link for payment {payment_id}")
-        
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'received': True})
-        }
-        
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return {
-            'statusCode': 400,
-            'body': json.dumps({'error': str(e)})
-        }
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'received': True})
+            }
+            
+        except Exception as e:
+            print(f"Stripe Error: {str(e)}")
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': str(e)})
+            }
+    
+    # Default response if no handler matched
+    return {
+        'statusCode': 400,
+        'headers': {
+            'Access-Control-Allow-Origin': '*',
+            'Content-Type': 'application/json',
+        },
+        'body': json.dumps({'error': 'Invalid request'})
+    }
 
 # For Vercel
 def main(request):

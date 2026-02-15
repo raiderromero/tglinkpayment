@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Link Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .telegram-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideDown 0.3s ease-in;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+            }
+        }
+
+        .result h3 {
+            color: #27ae60;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .link-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .link-input {
+            flex: 1;
+            padding: 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #0088cc;
+            word-break: break-all;
+        }
+
+        .copy-btn, .open-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .copy-btn {
+            background: #0088cc;
+            color: white;
+        }
+
+        .copy-btn:hover {
+            background: #006699;
+        }
+
+        .open-btn {
+            background: #0088cc;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .open-btn:hover {
+            background: #006699;
+        }
+
+        .telegram-btn {
+            flex: 1;
+            padding: 12px 20px;
+        }
+
+        .warning {
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 6px;
+            color: #856404;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .warning-icon {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .error {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            border-radius: 6px;
+            color: #721c24;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: slideDown 0.3s ease-in;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-left: 4px solid #0088cc;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #004085;
+        }
+
+        .unban-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f0f7ff;
+            border-left: 4px solid #ff6b6b;
+            border-radius: 8px;
+        }
+
+        .unban-section h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .unban-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .unban-form input {
+            flex: 1;
+        }
+
+        .unban-btn {
+            padding: 12px 20px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .unban-btn:hover {
+            background: #ff5252;
+        }
+
+        .unban-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .unban-message {
+            font-size: 13px;
+            color: #d63031;
+            display: none;
+        }
+
+        .unban-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="telegram-icon">📱</div>
+            <h1>Telegram Link Generator</h1>
+            <p class="subtitle">Generate permanent invite links instantly</p>
+        </div>
+
+        <form id="linkForm">
+            <button type="submit" class="btn" id="generateBtn">
+                📱 Generate Telegram Link
+            </button>
+        </form>
+
+        <div class="error" id="errorBox"></div>
+
+        <div class="result" id="resultBox">
+            <h3>✅ Link Generated Successfully!</h3>
+            <div class="link-container">
+                <button class="open-btn telegram-btn" onclick="handleAutomaticUnban(event)">🚀 Open Telegram Group</button>
+            </div>
+            <div class="link-container" style="margin-top: 15px;">
+                <input type="text" class="link-input" id="generatedLink" readonly>
+                <button class="copy-btn" onclick="copyLink(event)">📋 Copy</button>
+            </div>
+            <div class="unban-message" id="accessMessage" style="margin-top: 15px; text-align: center;"></div>
+        </div>
+
+
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        // Telegram Bot Credentials & Function URL
+        const TELEGRAM_BOT_TOKEN = '8227364388:AAH429ofpnoUE-i3kMGUQDylRJKWtxMgFJ4';
+        const TELEGRAM_GROUP_ID = '-1003798603747';
+        
+        // Netlify Function URL - Update this to your actual domain
+        // For local: /.netlify/functions/netlify_function
+        // For production: https://yourdomain.com/.netlify/functions/netlify_function
+        const NETLIFY_FUNCTION_URL = '/.netlify/functions/netlify_function';
+        
+        // Check if page is opened in Telegram Web App
+        let currentUser = null;
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                currentUser = tg.initDataUnsafe.user;
+            }
+        }
+        
+        async function handleAutomaticUnban(e) {
+            const openBtn = (e && e.currentTarget) ? e.currentTarget : document.querySelector('.open-btn.telegram-btn');
+            const accessMessage = document.getElementById('accessMessage');
+            const originalText = openBtn ? openBtn.textContent : '🚀 Open Telegram Group';
+            const link = document.getElementById('generatedLink').value;
+            
+            // Show checking status
+            if (openBtn) {
+                openBtn.disabled = true;
+                openBtn.innerHTML = 'Checking access... <span class="loading"></span>';
+            }
+            accessMessage.textContent = '';
+            accessMessage.classList.remove('show');
+            
+            try {
+                // If we have user ID (from Telegram Web App), try to unban them
+                if (currentUser && currentUser.id) {
+                    const userId = currentUser.id;
+                    
+                    accessMessage.textContent = '🔓 Resetting access...';
+                    accessMessage.style.color = '#0088cc';
+                    accessMessage.classList.add('show');
+                    
+                    // Call Netlify serverless function to unban user
+                    let unbanSuccessful = false;
+                    
+                    try {
+                        const response = await fetch(NETLIFY_FUNCTION_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                action: 'unban',
+                                user_id: userId
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success || response.ok) {
+                            unbanSuccessful = true;
+                            accessMessage.innerHTML = `
+                                <p style="color: #27ae60; margin-bottom: 10px;">✅ Access restored! Opening group...</p>
+                            `;
+                        } else {
+                            accessMessage.innerHTML = `
+                                <p style="color: #ff9800; margin-bottom: 6px;">⚠️ ${data.message || 'Unable to reset access'}</p>
+                                <p style="font-size: 12px; color: #666;">Opening group link...</p>
+                            `;
+                        }
+                    } catch (unbanError) {
+                        console.error('Unban error:', unbanError);
+                        accessMessage.innerHTML = `
+                            <p style="color: #ff9800;">⚠️ Opening group link...</p>
+                        `;
+                    }
+                } else {
+                    // Not in Telegram Web App - show manual unban option
+                    accessMessage.innerHTML = `
+                        <p style="margin-bottom: 10px; color: #ff9800;">⚠️ Link may have expired or access denied</p>
+                        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">If you were banned, click below to reset access:</p>
+                        <button type="button" class="unban-btn" style="width: 100%; margin-bottom: 10px;">
+                            🤖 Click Here to Reset Access
+                        </button>
+                        <p style="font-size: 11px; color: #999;">You'll be taken to our bot to restore access</p>
+                    `;
+                    accessMessage.classList.add('show');
+                    
+                    // Set up the reset button
+                    const resetBtn = accessMessage.querySelector('.unban-btn');
+                    resetBtn.onclick = (e) => {
+                        e.preventDefault();
+                        window.open('https://t.me/tgchannel2_bot?start=unban', '_blank');
+                    };
+                }
+                
+                // Open the group link after a short delay
+                setTimeout(() => {
+                    if (link) {
+                        window.open(link, '_blank');
+                    }
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Unban process error:', error);
+                accessMessage.textContent = 'ℹ️ Opening group link...';
+                accessMessage.style.color = '#0088cc';
+                accessMessage.classList.add('show');
+                
+                // Still try to open the link
+                setTimeout(() => {
+                    if (link) {
+                        window.open(link, '_blank');
+                    }
+                }, 1000);
+            } finally {
+                // Reset button after 4 seconds
+                setTimeout(() => {
+                    if (openBtn) {
+                        openBtn.disabled = false;
+                        openBtn.innerHTML = originalText;
+                    }
+                }, 4000);
+            }
+        }
+        
+        // Auto-unban when page loads if user is detected in Telegram Web App
+        function initializeAutoUnban() {
+            if (currentUser && currentUser.id) {
+                console.log('User detected in Telegram Web App:', currentUser.id);
+                // Optional: You can automatically attempt unban on page load here
+                // Uncomment the line below to auto-unban on load:
+                // handleAutomaticUnban();
+            }
+        }
+        
+        // Call initialization when page is ready
+        window.addEventListener('load', initializeAutoUnban);
+        
+        document.getElementById('linkForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const generateBtn = document.getElementById('generateBtn');
+            const errorBox = document.getElementById('errorBox');
+            const resultBox = document.getElementById('resultBox');
+            
+            // Hide previous results/errors
+            errorBox.classList.remove('show');
+            resultBox.classList.remove('show');
+            
+            // Show loading state
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = 'Generating... <span class="loading"></span>';
+            
+            try {
+                // Telegram Bot API endpoint
+                const apiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/createChatInviteLink`;
+                
+                // Build request parameters (no expiration, no member limit)
+                const params = {
+                    chat_id: TELEGRAM_GROUP_ID
+                };
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok && data.result && data.result.invite_link) {
+                    // Show success
+                    document.getElementById('generatedLink').value = data.result.invite_link;
+                    resultBox.classList.add('show');
+                } else {
+                    // Show error
+                    errorBox.textContent = '❌ Error: ' + (data.description || 'Failed to generate link. Check bot permissions.');
+                    errorBox.classList.add('show');
+                }
+            } catch (error) {
+                errorBox.textContent = '❌ Error: ' + error.message;
+                errorBox.classList.add('show');
+            } finally {
+                // Reset button
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '📱 Generate Telegram Link';
+            }
+        });
+        
+        function copyLink(e) {
+            const linkInput = document.getElementById('generatedLink');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); // For mobile devices
+            
+            navigator.clipboard.writeText(linkInput.value).then(() => {
+            const copyBtn = (e && e.currentTarget) ? e.currentTarget : document.querySelector('.copy-btn');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✓ Copied!';
+                copyBtn.style.background = '#27ae60';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = '#0088cc';
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy: ' + err);
+            });
+        }
+        
+        function openLink() {
+            const link = document.getElementById('generatedLink').value;
+            if (link) {
+                window.open(link, '_blank');
+            }
+        }
+    </script>
+</body>
+</html>
