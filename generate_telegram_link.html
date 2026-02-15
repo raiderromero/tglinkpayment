@@ -328,8 +328,13 @@
 
         <div class="result" id="resultBox">
             <h3>✅ Link Generated Successfully!</h3>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label for="userIdInput">🆔 Telegram User ID (required for unban)</label>
+                <input type="text" id="userIdInput" placeholder="Enter Telegram User ID (e.g. 123456789)" style="margin-top: 5px;">
+                <p style="font-size: 11px; color: #999; margin-top: 5px;">Send /start to @userinfobot on Telegram to get your User ID</p>
+            </div>
             <div class="link-container">
-                <button class="open-btn telegram-btn" onclick="handleAutomaticUnban(event)">🚀 Open Telegram Group</button>
+                <button class="open-btn telegram-btn" onclick="handleAutomaticUnban(event)">🔓 Unban & Open Telegram Group</button>
             </div>
             <div class="link-container" style="margin-top: 15px;">
                 <input type="text" class="link-input" id="generatedLink" readonly>
@@ -365,112 +370,61 @@
         async function handleAutomaticUnban(e) {
             const openBtn = (e && e.currentTarget) ? e.currentTarget : document.querySelector('.open-btn.telegram-btn');
             const accessMessage = document.getElementById('accessMessage');
-            const originalText = openBtn ? openBtn.textContent : '🚀 Open Telegram Group';
+            const originalText = openBtn ? openBtn.textContent : '� Unban & Open Telegram Group';
             const link = document.getElementById('generatedLink').value;
+            
+            // Get user ID from input field or Telegram WebApp
+            let userId = document.getElementById('userIdInput').value.trim();
+            if (!userId && currentUser && currentUser.id) {
+                userId = currentUser.id;
+            }
+            
+            if (!userId) {
+                accessMessage.innerHTML = '<p style="color: #d63031;">❌ Please enter your Telegram User ID above first!</p><p style="font-size: 11px; color: #999; margin-top: 5px;">Send /start to @userinfobot on Telegram to get your ID</p>';
+                accessMessage.classList.add('show');
+                document.getElementById('userIdInput').focus();
+                return;
+            }
             
             // Show checking status
             if (openBtn) {
                 openBtn.disabled = true;
-                openBtn.innerHTML = 'Checking access... <span class="loading"></span>';
+                openBtn.innerHTML = 'Unbanning & opening... <span class="loading"></span>';
             }
             accessMessage.textContent = '';
             accessMessage.classList.remove('show');
             
             try {
-                // If we have user ID (from Telegram Web App), try to unban them
-                if (currentUser && currentUser.id) {
-                    const userId = currentUser.id;
-                    
-                    accessMessage.textContent = '🔓 Resetting access...';
-                    accessMessage.style.color = '#0088cc';
-                    accessMessage.classList.add('show');
-                    
-                    // Call Netlify serverless function to unban user
-                    let unbanSuccessful = false;
-                    
-                    try {
-                        const response = await fetch(NETLIFY_FUNCTION_URL, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                action: 'unban',
-                                user_id: userId
-                            })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        console.log('Unban response:', data);
-                        
-                        if (data.success) {
-                            unbanSuccessful = true;
-                            accessMessage.innerHTML = `
-                                <p style="color: #27ae60; margin-bottom: 10px;">✅ Access restored! Opening group...</p>
-                            `;
-                        } else if (response.status === 200) {
-                            // Even if not explicitly successful, 200 status is good
-                            accessMessage.innerHTML = `
-                                <p style="color: #ff9800; margin-bottom: 6px;">⚠️ ${data.message || 'Attempting to reset access...'}</p>
-                                <p style="font-size: 12px; color: #666;">Opening group link...</p>
-                                <p style="font-size: 10px; color: #999; margin-top: 5px;">Details: ${data.message || 'No details'}</p>
-                            `;
-                        } else {
-                            accessMessage.innerHTML = `
-                                <p style="color: #ff9800; margin-bottom: 6px;">⚠️ ${data.message || 'Unable to reset access'}</p>
-                                <p style="font-size: 12px; color: #666;">Opening group link...</p>
-                                <p style="font-size: 10px; color: #d63031; margin-top: 5px;">Error: ${data.message || 'Unknown error'}</p>
-                            `;
-                        }
-                    } catch (unbanError) {
-                        console.error('Unban error:', unbanError);
-                        accessMessage.innerHTML = `
-                            <p style="color: #ff9800;">⚠️ Opening group link...</p>
-                            <p style="font-size: 10px; color: #d63031; margin-top: 5px;">Error: ${unbanError.message}</p>
-                        `;
-                    }
-                } else {
-                    // Not in Telegram Web App - show manual unban option
-                    accessMessage.innerHTML = `
-                        <p style="margin-bottom: 10px; color: #ff9800;">⚠️ Link may have expired or access denied</p>
-                        <p style="font-size: 12px; color: #666; margin-bottom: 10px;">If you were banned, click below to reset access:</p>
-                        <button type="button" class="unban-btn" style="width: 100%; margin-bottom: 10px;">
-                            🤖 Click Here to Reset Access
-                        </button>
-                        <p style="font-size: 11px; color: #999;">You'll be taken to our bot to restore access</p>
-                    `;
-                    accessMessage.classList.add('show');
-                    
-                    // Set up the reset button
-                    const resetBtn = accessMessage.querySelector('.unban-btn');
-                    resetBtn.onclick = (e) => {
-                        e.preventDefault();
-                        window.open('https://t.me/tgchannel2_bot?start=unban', '_blank');
-                    };
-                }
-                
-                // Open the group link after a short delay
-                setTimeout(() => {
-                    if (link) {
-                        window.open(link, '_blank');
-                    }
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Unban process error:', error);
-                accessMessage.textContent = 'ℹ️ Opening group link...';
+                accessMessage.textContent = '🔓 Unbanning user ' + userId + '...';
                 accessMessage.style.color = '#0088cc';
                 accessMessage.classList.add('show');
                 
-                // Still try to open the link
-                setTimeout(() => {
-                    if (link) {
-                        window.open(link, '_blank');
-                    }
-                }, 1000);
+                // Call Netlify serverless function to unban user
+                const response = await fetch(NETLIFY_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'unban', user_id: userId })
+                });
+                
+                const data = await response.json();
+                console.log('Unban response:', data);
+                
+                if (data.success) {
+                    accessMessage.innerHTML = '<p style="color: #27ae60; margin-bottom: 10px;">✅ User unbanned successfully! Opening group in 3 seconds...</p>';
+                    // Wait 3 seconds for Telegram to process the unban, then open link
+                    setTimeout(() => {
+                        if (link) window.open(link, '_blank');
+                    }, 3000);
+                } else {
+                    accessMessage.innerHTML = `<p style="color: #ff9800; margin-bottom: 6px;">⚠️ ${data.message || 'Unban may not have succeeded'}</p><p style="font-size: 12px; color: #666;">Opening group link anyway...</p>`;
+                    setTimeout(() => {
+                        if (link) window.open(link, '_blank');
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Unban error:', error);
+                accessMessage.innerHTML = `<p style="color: #d63031;">❌ Error: ${error.message}</p><p style="font-size: 12px; color: #666;">Try opening the link manually.</p>`;
             } finally {
-                // Reset button after 4 seconds
                 setTimeout(() => {
                     if (openBtn) {
                         openBtn.disabled = false;
